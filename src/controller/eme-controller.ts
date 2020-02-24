@@ -5,7 +5,7 @@
  * DRM support for Hls.js
  */
 import { Events } from '../events';
-import { ErrorDetails } from '../errors';
+import { ErrorDetails, ErrorTypes } from '../errors';
 import { logger } from '../utils/logger';
 import Hls from '../hls';
 import { ComponentAPI } from '../types/component-api';
@@ -359,11 +359,17 @@ class EMEController implements ComponentAPI {
       this._emeConfigured = true;
 
       this.hls.trigger(Events.EME_CONFIGURED);
-    }).catch((err: string) => {
+    }).catch((err) => {
       logger.error('EME Configuration failed');
 
       this._emeConfiguring = false;
       this._emeConfigured = false;
+
+      this.hls.trigger(Events.ERROR, {
+        type: ErrorTypes.KEY_SYSTEM_ERROR,
+        details: err,
+        fatal: true
+      });
     })
   }
 
