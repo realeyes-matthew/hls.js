@@ -66,7 +66,7 @@ export enum Events {
   SUBTITLE_TRACKS_CLEARED = 'hlsSubtitleTracksCleared',
   // fired when an subtitle track switch occurs - data: { id : subtitle track id }
   SUBTITLE_TRACK_SWITCH = 'hlsSubtitleTrackSwitch',
-    // fired when a subtitle track loading starts - data: { url : subtitle track URL, id : subtitle track id }
+  // fired when a subtitle track loading starts - data: { url : subtitle track URL, id : subtitle track id }
   SUBTITLE_TRACK_LOADING = 'hlsSubtitleTrackLoading',
   // fired when a subtitle track loading finishes - data: { details : levelDetails object, id : subtitle track id, stats : { trequest, tfirst, tload, mtime } }
   SUBTITLE_TRACK_LOADED = 'hlsSubtitleTrackLoaded',
@@ -116,6 +116,10 @@ export enum Events {
   KEY_LOADED = 'hlsKeyLoaded',
   // fired when the live back buffer is reached defined by the liveBackBufferLength config option - data : { bufferEnd: number }
   LIVE_BACK_BUFFER_REACHED = 'hlsLiveBackBufferReached',
+  // fired when EME is being configured
+  EME_CONFIGURING = 'hlsEmeConfiguring',
+  // fired when EME has been configured
+  EME_CONFIGURED = 'hlsEmeConfigured'
 }
 
 export interface HlsListeners {
@@ -174,6 +178,8 @@ export interface HlsListeners {
   [Events.KEY_LOADING]: (event: Events.KEY_LOADING, data: KeyLoadingData) => void
   [Events.KEY_LOADED]: (event: Events.KEY_LOADED, data: KeyLoadedData) => void
   [Events.LIVE_BACK_BUFFER_REACHED]: (event: Events.LIVE_BACK_BUFFER_REACHED, data: LiveBackBufferData) => void
+  [Events.EME_CONFIGURING]: (event: Events.EME_CONFIGURING) => void
+  [Events.EME_CONFIGURED]: (event: Events.EME_CONFIGURED) => void
 }
 export interface HlsEventEmitter {
   on<E extends keyof HlsListeners, Context = undefined> (event: E, listener: HlsListeners[E], context?: Context): void

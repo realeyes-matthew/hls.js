@@ -6,13 +6,12 @@ import CapLevelController from './controller/cap-level-controller';
 import FPSController from './controller/fps-controller';
 import TimelineController from './controller/timeline-controller';
 import SubtitleTrackController from './controller/subtitle-track-controller';
-import EMEController from './controller/eme-controller';
+import EMEController, { GetEMEInitDataFunc, GetEMELicenseFunc, RequestMediaKeySystemAccessFunc } from './controller/eme-controller';
 
 import XhrLoader from './utils/xhr-loader';
 import FetchLoader, { fetchSupported } from './utils/fetch-loader';
 import * as Cues from './utils/cues';
 import { SubtitleStreamController } from './controller/subtitle-stream-controller';
-import { requestMediaKeySystemAccess, MediaKeyFunc } from './utils/mediakeys-helper';
 import { logger } from './utils/logger';
 
 type ABRControllerConfig = {
@@ -38,11 +37,13 @@ type CapLevelControllerConfig = {
   capLevelToPlayerSize: boolean
 };
 
-export type EMEControllerConfig = {
-  licenseXhrSetup?: (xhr: XMLHttpRequest, url: string) => void,
+type EMEControllerConfig = {
   emeEnabled: boolean,
-  widevineLicenseUrl?: string,
-  requestMediaKeySystemAccessFunc: MediaKeyFunc | null,
+  emeInitDataInFrag: boolean,
+  reuseEMELicense: boolean,
+  requestMediaKeySystemAccessFunc: RequestMediaKeySystemAccessFunc | undefined,
+  getEMEInitDataFunc: GetEMEInitDataFunc | undefined,
+  getEMELicenseFunc: GetEMELicenseFunc | undefined,
 };
 
 type FragmentLoaderConfig = {
@@ -212,7 +213,6 @@ export const hlsDefaultConfig: HlsConfig = {
   fLoader: void 0, // used by fragment-loader
   pLoader: void 0, // used by playlist-loader
   xhrSetup: void 0, // used by xhr-loader
-  licenseXhrSetup: void 0, // used by eme-controller
   // fetchSetup: void 0,
   abrController: AbrController,
   bufferController: BufferController,
@@ -232,12 +232,15 @@ export const hlsDefaultConfig: HlsConfig = {
   maxStarvationDelay: 4, // used by abr-controller
   maxLoadingDelay: 4, // used by abr-controller
   minAutoBitrate: 0, // used by hls
-  emeEnabled: false, // used by eme-controller
-  widevineLicenseUrl: void 0, // used by eme-controller
-  requestMediaKeySystemAccessFunc: requestMediaKeySystemAccess, // used by eme-controller
   testBandwidth: true,
   renderNatively: false,
   progressive: true,
+  emeEnabled: false, // used by eme-controller
+  emeInitDataInFrag: true, // used by eme-controller
+  reuseEMELicense: false, // used by eme-controller
+  requestMediaKeySystemAccessFunc: undefined, // used by eme-controller
+  getEMEInitDataFunc: undefined, // used by eme-controller
+  getEMELicenseFunc: undefined, // used by eme-controllers
 
   // Dynamic Modules
   ...timelineConfig(),
