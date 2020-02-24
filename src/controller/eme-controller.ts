@@ -12,6 +12,7 @@ import { ComponentAPI } from '../types/component-api';
 import { MediaAttachedData, ManifestParsedData } from '../types/events';
 import { Level } from '../types/level';
 import { MediaPlaylist } from '../types/media-playlist';
+import { requestMediaKeySystemAccess } from '../utils/mediakeys-helper';
 
 interface EMEKeySessionResponse {
   keySession: MediaKeySession,
@@ -68,12 +69,12 @@ class EMEController implements ComponentAPI {
      * @constructs
      * @param {Hls} hls Our Hls.js instance
      */
-  constructor(hls: Hls) {
+  constructor (hls: Hls) {
     this.hls = hls;
 
     this._emeEnabled = this.hls.config.emeEnabled;
     this._requestMediaKeySystemAccessFunc = this.hls.config.requestMediaKeySystemAccessFunc;
-    this._emeInitDataInFrag = this.hls.config.emeInitDataInFrag
+    this._emeInitDataInFrag = this.hls.config.emeInitDataInFrag;
     this._reuseEMELicense = this.hls.config.reuseEMELicense;
     this._getEMEInitDataFunc = this.hls.config.getEMEInitDataFunc;
     this._getEMELicenseFunc = this.hls.config.getEMELicenseFunc;
@@ -81,28 +82,28 @@ class EMEController implements ComponentAPI {
     this._registerListeners();
   }
 
-  public destroy() {
+  public destroy () {
     this._unregisterListeners();
   }
 
-  private _registerListeners() {
+  private _registerListeners () {
     this.hls.on(Events.MEDIA_ATTACHED, this.onMediaAttached, this);
     this.hls.on(Events.MEDIA_DETACHED, this.onMediaDetached, this);
     this.hls.on(Events.MANIFEST_PARSED, this.onManifestParsed, this);
   }
 
-  private _unregisterListeners() {
+  private _unregisterListeners () {
     this.hls.off(Events.MEDIA_ATTACHED, this.onMediaAttached, this);
     this.hls.off(Events.MEDIA_DETACHED, this.onMediaDetached, this);
     this.hls.off(Events.MANIFEST_PARSED, this.onManifestParsed, this);
   }
 
-  onManifestParsed(event: Events.MANIFEST_PARSED, data: ManifestParsedData) {
+  onManifestParsed (event: Events.MANIFEST_PARSED, data: ManifestParsedData) {
     if (!this._emeEnabled) {
       return;
     }
 
-    this._levels = data.levels
+    this._levels = data.levels;
     this._audioTracks = data.audioTracks;
 
     if (!this._emeInitDataInFrag && !this._emeConfiguring && !this._emeConfigured) {
@@ -110,7 +111,7 @@ class EMEController implements ComponentAPI {
     }
   }
 
-  onMediaAttached(event: Events.MEDIA_ATTACHED, data: MediaAttachedData) {
+  onMediaAttached (event: Events.MEDIA_ATTACHED, data: MediaAttachedData) {
     const media = data.media;
 
     if (media) {
@@ -127,7 +128,7 @@ class EMEController implements ComponentAPI {
     }
   }
 
-  onMediaDetached() {
+  onMediaDetached () {
     if (this._emeEnabled) {
       const keySessionClosePromises: Promise<void>[] = this._keySessions.map((keySession) => {
         return keySession.close();
@@ -147,7 +148,7 @@ class EMEController implements ComponentAPI {
    * requred for different levels or audio tracks
    * @returns {Promise<any>} Promise resolved or rejected by updating MediaKeySession with license
    */
-  private _onMediaKeySessionCreated(session: MediaKeySession, levelOrAudioTrack: any): Promise<any> {
+  private _onMediaKeySessionCreated (session: MediaKeySession, levelOrAudioTrack: any): Promise<any> {
     logger.log('Generating license request');
 
     return this.getEMEInitializationData(levelOrAudioTrack, this._initDataType, this._initData).then((initDataInfo) => {
@@ -190,7 +191,7 @@ class EMEController implements ComponentAPI {
    * @returns {Promise<EMEKeySessionResponse>} Promise that resolves to the Media Key Session created on the Media Keys https://developer.mozilla.org/en-US/docs/Web/API/MediaKeySession
    * Also includes the level or audio track to associate with the session
    */
-  private _onMediaKeysSet(mediaKeys: MediaKeys, levelOrAudioTrack: Level | MediaPlaylist): Promise<EMEKeySessionResponse> {
+  private _onMediaKeysSet (mediaKeys: MediaKeys, levelOrAudioTrack: Level | MediaPlaylist): Promise<EMEKeySessionResponse> {
     logger.log('Creating session on media keys');
 
     const keySession = mediaKeys.createSession();
@@ -211,7 +212,7 @@ class EMEController implements ComponentAPI {
    * @param {MediaKeys} mediaKeys Media Keys created on the Key System Access object https://developer.mozilla.org/en-US/docs/Web/API/MediaKeys
    * @returns {Promise<MediaKeys>} Promise that resvoles to the created media keys  https://developer.mozilla.org/en-US/docs/Web/API/MediaKeys
    */
-  private _onMediaKeysCreated(mediaKeys): Promise<MediaKeys> {
+  private _onMediaKeysCreated (mediaKeys): Promise<MediaKeys> {
     if (this._media && this._media.mediaKeys) {
       logger.log('Media keys have already been set on media');
 
@@ -235,7 +236,7 @@ class EMEController implements ComponentAPI {
    * @param {MediaKeySystemAccess} mediaKeySystemAccess https://developer.mozilla.org/en-US/docs/Web/API/MediaKeySystemAccess
    * @returns {Promise<MediaKeys>} Promise that resolves to the created media keys https://developer.mozilla.org/en-US/docs/Web/API/MediaKeys
    */
-  private _onMediaKeySystemAccessObtained(mediaKeySystemAccess: MediaKeySystemAccess): Promise<MediaKeys> {
+  private _onMediaKeySystemAccessObtained (mediaKeySystemAccess: MediaKeySystemAccess): Promise<MediaKeys> {
     if (this.media.mediaKeys) {
       logger.log('Media keys have already been created');
 
@@ -258,10 +259,10 @@ class EMEController implements ComponentAPI {
    * @param {MediaKeySystemConfiguration[]} mediaKeySystemConfigs Configurations to request Media Key System access with https://developer.mozilla.org/en-US/docs/Web/API/MediaKeySystemConfiguration
    * @returns {Promise<MediaKeySystemAccess} Promise that resolves to the Media Key System Access object https://developer.mozilla.org/en-US/docs/Web/API/MediaKeySystemAccess
    */
-  private _getMediaKeySystemAccess(mediaKeySystemConfigs: MediaKeySystemConfiguration[]): Promise<MediaKeySystemAccess> {
+  private _getMediaKeySystemAccess (mediaKeySystemConfigs: MediaKeySystemConfiguration[]): Promise<MediaKeySystemAccess> {
     logger.log('Requesting encrypted media key system access');
 
-    if (!window.navigator.requestMediaKeySystemAccess) {
+    if (!requestMediaKeySystemAccess) {
       return Promise.reject(ErrorDetails.KEY_SYSTEM_NO_ACCESS);
     }
 
@@ -278,7 +279,7 @@ class EMEController implements ComponentAPI {
    * @param {any} levels Levels found in manifest
    * @returns {Array<MediaSystemConfiguration>} A non-empty Array of MediaKeySystemConfiguration objects https://developer.mozilla.org/en-US/docs/Web/API/MediaKeySystemConfiguration
    */
-  private _getSupportedMediaKeySystemConfigurations(levels: Level[]): MediaKeySystemConfiguration[] {
+  private _getSupportedMediaKeySystemConfigurations (levels: Level[]): MediaKeySystemConfiguration[] {
     const baseConfig: MediaKeySystemConfiguration = {
       audioCapabilities: [], // e.g. { contentType: 'audio/mp4; codecs="avc1.42E01E"' }
       videoCapabilities: [] // e.g. { contentType: 'video/mp4; codecs="avc1.42E01E"' }
@@ -299,7 +300,7 @@ class EMEController implements ComponentAPI {
     ];
   }
 
-  private _configureEME() {
+  private _configureEME () {
     this.hls.trigger(Events.EME_CONFIGURING);
 
     this._emeConfiguring = true;
@@ -375,7 +376,7 @@ class EMEController implements ComponentAPI {
 
   // Getters for EME Controller
 
-  get media() {
+  get media () {
     if (!this._media) {
       throw new Error('Media has not been set on EME Controller');
     }
@@ -385,7 +386,7 @@ class EMEController implements ComponentAPI {
 
   // Getters for user configurations
 
-  get requestMediaKeySystemAccess() {
+  get requestMediaKeySystemAccess () {
     if (!this._requestMediaKeySystemAccessFunc) {
       throw new Error('No requestMediaKeySystemAccess function configured');
     }
@@ -393,7 +394,7 @@ class EMEController implements ComponentAPI {
     return this._requestMediaKeySystemAccessFunc;
   }
 
-  get getEMEInitializationData() {
+  get getEMEInitializationData () {
     if (!this._getEMEInitDataFunc) {
       throw new Error('No getEMEInitData function configured');
     }
@@ -401,7 +402,7 @@ class EMEController implements ComponentAPI {
     return this._getEMEInitDataFunc;
   }
 
-  get getEMELicense() {
+  get getEMELicense () {
     if (!this._getEMELicenseFunc) {
       throw new Error('No getEMELicense function configured');
     }
